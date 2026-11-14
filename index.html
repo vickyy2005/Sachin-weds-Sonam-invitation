@@ -3988,63 +3988,13 @@
     );
 
 
-    /* =========================================================
-       BACKGROUND MUSIC
-    ========================================================= */
-    (function () {
-      const audio = document.getElementById("bgMusic");
-      const toggleBtn = document.getElementById("musicToggle");
-      if (!audio || !toggleBtn) return;
-
-      let isStarted = false;
-
-      function playMusic() {
-        audio.play().then(() => {
-          toggleBtn.classList.remove("paused");
-          toggleBtn.classList.add("playing");
-          isStarted = true;
-        }).catch(() => {
-          toggleBtn.classList.add("paused");
-          toggleBtn.classList.remove("playing");
-        });
-      }
-
-      function pauseMusic() {
-        audio.pause();
-        toggleBtn.classList.remove("playing");
-        toggleBtn.classList.add("paused");
-      }
-
-      playMusic();
-
-      function unlockAudio() {
-        if (!isStarted || audio.paused) {
-          playMusic();
-        }
-        window.removeEventListener("click", unlockAudio);
-        window.removeEventListener("touchstart", unlockAudio);
-        window.removeEventListener("scroll", unlockAudio);
-      }
-      window.addEventListener("click", unlockAudio, { passive: true });
-      window.addEventListener("touchstart", unlockAudio, { passive: true });
-      window.addEventListener("scroll", unlockAudio, { passive: true, once: true });
-
-      toggleBtn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        if (audio.paused) {
-          playMusic();
-        } else {
-          pauseMusic();
-        }
-      });
-    })();
-
   </script>
 
   <!-- Background Music & Floating Controller -->
-  <audio id="bgMusic" loop preload="auto">
+  <audio id="bgMusic" loop preload="auto" src="music1.m4a">
     <source src="music1.m4a" type="audio/mp4">
     <source src="music1.m4a" type="audio/x-m4a">
+    <source src="music.mp3" type="audio/mpeg">
   </audio>
 
   <button id="musicToggle" class="music-toggle paused" aria-label="Toggle Background Music" title="Play / Pause Music">
@@ -4060,6 +4010,86 @@
     </div>
     <span class="music-pulse"></span>
   </button>
+
+  <script>
+    /* =========================================================
+       BACKGROUND MUSIC CONTROLLER
+    ========================================================= */
+    (function () {
+      function setupAudio() {
+        const audio = document.getElementById("bgMusic");
+        const toggleBtn = document.getElementById("musicToggle");
+        if (!audio || !toggleBtn) return;
+
+        let isStarted = false;
+
+        function updateUI(playing) {
+          if (playing) {
+            toggleBtn.classList.remove("paused");
+            toggleBtn.classList.add("playing");
+          } else {
+            toggleBtn.classList.remove("playing");
+            toggleBtn.classList.add("paused");
+          }
+        }
+
+        function playMusic() {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.then(() => {
+              updateUI(true);
+              isStarted = true;
+            }).catch((e) => {
+              updateUI(false);
+            });
+          }
+        }
+
+        function pauseMusic() {
+          audio.pause();
+          updateUI(false);
+        }
+
+        // Try playing on initial load
+        playMusic();
+
+        // Unlock audio on first user gesture (required by modern mobile & desktop browsers)
+        function unlockAudio() {
+          if (!isStarted || audio.paused) {
+            playMusic();
+          }
+          window.removeEventListener("click", unlockAudio);
+          window.removeEventListener("touchstart", unlockAudio);
+          window.removeEventListener("scroll", unlockAudio);
+          window.removeEventListener("keydown", unlockAudio);
+        }
+
+        window.addEventListener("click", unlockAudio, { passive: true });
+        window.addEventListener("touchstart", unlockAudio, { passive: true });
+        window.addEventListener("scroll", unlockAudio, { passive: true, once: true });
+        window.addEventListener("keydown", unlockAudio, { passive: true, once: true });
+
+        // Floating button click toggle
+        toggleBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          if (audio.paused) {
+            playMusic();
+          } else {
+            pauseMusic();
+          }
+        });
+
+        audio.addEventListener("playing", () => updateUI(true));
+        audio.addEventListener("pause", () => updateUI(false));
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", setupAudio);
+      } else {
+        setupAudio();
+      }
+    })();
+  </script>
 
   <style>
     /* Background Music Controller */
